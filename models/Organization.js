@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const organizationSchema = new mongoose.Schema({
+const OrganizationSchema = new mongoose.Schema({
   login: {
     type: String,
     required: true,
@@ -34,6 +34,6 @@ const organizationSchema = new mongoose.Schema({
   }
 });
 
-const Organization = mongoose.models.Organization || mongoose.model('Organization', organizationSchema);
+const Organization = mongoose.models.Organization || mongoose.model('Organization', OrganizationSchema);
 
 module.exports = Organization;

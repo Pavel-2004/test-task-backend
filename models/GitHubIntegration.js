@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const githubIntegrationSchema = new mongoose.Schema({
+const GithubIntegrationSchema = new mongoose.Schema({
   accessToken: {
     type: String,
     required: true, 
@@ -13,6 +13,6 @@ const githubIntegrationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-const GitHubIntegration = mongoose.models.GitHubIntegration || mongoose.model('GitHubIntegration', githubIntegrationSchema);
+const GitHubIntegration = mongoose.models.GitHubIntegration || mongoose.model('GitHubIntegration', GithubIntegrationSchema);
 
 module.exports = GitHubIntegration;
