@@ -18,6 +18,18 @@ const UserSchema = new mongoose.Schema({
     ref: 'Organization',
     required: true,
   },
+  avatarUrl: {
+    type: String,
+    required: false
+  },
+  url: {
+    type: String,
+    required: false
+  },
+  description: {
+    type: String,
+    required: false
+  },
 })
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema)

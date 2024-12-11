@@ -4,7 +4,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-const githubRouter = require('./routes/github.js');
+const githubRouter = require('./routes/github/index.js');
 
 
 const app = express();

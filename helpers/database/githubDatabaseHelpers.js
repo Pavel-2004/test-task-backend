@@ -1,18 +1,17 @@
-const { fetchOrgRepos, fetchAllCommits, fetchAllIssuesAndPullRequests, fetchAllChangeLogs, fetchOrgUsers } = require('../../helpers/requests/githubRequestHelpers');
-const Organization = require('../../models/organization');
-const Repository = require('../../models/repository');
-const ChangeLog = require('../../models/changelog');
-const Commit = require('../../models/commit');
-const Issue = require('../../models/issue');
-const PullRequest = require('../../models/pullrequest');
-const GitHubIntegration = require('../../models/githubIntegration');
+const { fetchOrgRepos, fetchAllCommits, fetchAllIssuesAndPullRequests, fetchAllChangeLogs, fetchOrgUsers, fetchAllIssues } = require('../../helpers/requests/githubRequestHelpers');
+const Organization = require('../../models/Organization');
+const Repository = require('../../models/Repository');
+const ChangeLog = require('../../models/Changelog');
+const Commit = require('../../models/Commit');
+const Issue = require('../../models/Issue');
+const GitHubIntegration = require('../../models/GithubIntegration');
 const User = require('../../models/User');
 
 const createGitHubIntegration = async (githubUsername, accessToken) => {
   try {
     return GitHubIntegration.create({
       accessToken,
-      githubUsername,
+      githubUserLogin: githubUsername,
     });
   }
   catch(error) {
@@ -23,7 +22,7 @@ const createGitHubIntegration = async (githubUsername, accessToken) => {
 const createOrganization = async (org, gitHubIntegrationId) => {
   try {
     return Organization.create({
-      login: org.login,
+      name: org.login,
       id: org.id,
       url: org.url,
       repos_url: org.repos_url,
@@ -49,8 +48,10 @@ const createRepository = async (repo, orgId) => {
       private: repo.private,
       description: repo.description,
       url: repo.url,
-      created_at: repo.created_at,
-      updated_at: repo.updated_at,
+      createdAt: repo.created_at,
+      description: repo.description,
+      createdAt: repo.createdAt,
+      language: repo.language
     });
   }
   catch(error) {
@@ -62,12 +63,17 @@ const createRepository = async (repo, orgId) => {
 const storeChangeLogs = async (changeLogs, repoId) => {
   try {
     const documents = changeLogs.map((changeLog) => ({
-      user: changeLog.author.login,
-      message: changeLog.body,
-      published_at: changeLog.published_at,
+      user: {
+        login: changeLog.actor.login,
+        avatarUrl: changeLog.actor.avatar_url
+      },
+      gitHubIssueId: changeLog.issue.id,
+      gitHubIssueNumber: changeLog.issue.number,
+      event: changeLog.event,
       created_at: changeLog.created_at,
-      repository: repoId,
+      repository: repoId
     }));
+    
     await ChangeLog.insertMany(documents);
   } 
   catch(error) {
@@ -77,6 +83,7 @@ const storeChangeLogs = async (changeLogs, repoId) => {
 };
 
 const storeCommits = async (commits, repoId) => {
+  
   try {
     const documents = commits.map((commit) => ({
       sha: commit.sha,
@@ -84,8 +91,10 @@ const storeCommits = async (commits, repoId) => {
       author: {
         name: commit.commit.author.name,
         email: commit.commit.author.email,
+        avatarUrl: commit.author ? commit.author.avatar_url : "",
+        login: commit.author ? commit.author.login : ""
       },
-      date: commit.commit.author.date,
+      date: commit.created_at,
       repository: repoId,
     }));
     await Commit.insertMany(documents);
@@ -100,8 +109,12 @@ const storeIssues = async (issues, repoId) => {
   try {
     const documents = issues.map((issue) => ({
       title: issue.title,
-      number: issue.number,
-      user: issue.user.login,
+      gitHubIssueNumber: issue.number,
+      user: {
+        login: issue.user.login,
+        avatarUrl: issue.user.avatar_url,
+      },
+      gitHubIssueId: issue.id,
       body: issue.body,
       state: issue.state,
       created_at: issue.created_at,
@@ -116,41 +129,20 @@ const storeIssues = async (issues, repoId) => {
   }
 };
 
-const storePullRequests = async (pullRequests, repoId) => {
-  try {
-    const documents = pullRequests.map((pullRequest) => ({
-      title: pullRequest.title,
-      number: pullRequest.number,
-      body: pullRequest.body,
-      user: pullRequest.user.login,
-      state: pullRequest.state,
-      created_at: pullRequest.created_at,
-      updated_at: pullRequest.updated_at,
-      repository: repoId,
-    }));
-    await PullRequest.insertMany(documents);
-  }
-  catch(error) {
-    console.error('Error storing pull requests', error)
-    throw error
-  }
-};
-
 const processRepository = async (repo, orgId, orgLogin, accessToken) => {
   try {
     const repoStored = await createRepository(repo, orgId);
 
-    const [changeLogs, commits, { issues, pullRequests }] = await Promise.all([
+    const [changeLogs, commits, issues] = await Promise.all([
       fetchAllChangeLogs(orgLogin, repo.name, accessToken),
       fetchAllCommits(orgLogin, repo.name, accessToken),
-      fetchAllIssuesAndPullRequests(orgLogin, repo.name, accessToken),
+      fetchAllIssues(orgLogin, repo.name, accessToken),
     ]);
 
     await Promise.all([
       storeChangeLogs(changeLogs, repoStored._id),
       storeCommits(commits, repoStored._id),
       storeIssues(issues, repoStored._id),
-      storePullRequests(pullRequests, repoStored._id),
     ]);
 
     return { repoName: repo.name };
@@ -166,7 +158,10 @@ const storeUsers = async (users, orgStored) => {
     login: user.login,
     url: user.url,
     admin: user.site_admin,
-    organization: orgStored._id
+    organization: orgStored._id,
+    avatarUrl: user.avatar_url,
+    url: user.url,
+    reposUrl: user.repos_url
   }))
 
   await User.insertMany(documents)
@@ -190,12 +185,6 @@ const processOrganizations = async (orgs, gitHubIntegrationId, accessToken) => {
   return Promise.all(orgPromises);
 };
 
-const processDeletePullRequestsFromRepository = async (repository) => {
-  await PullRequest.deleteMany({
-    repository: repository._id,
-  })
-}
-
 const processDeleteIssuesFromRepository = async (repository) => {
   await Issue.deleteMany({
     repository: repository._id,
@@ -210,14 +199,12 @@ const processDeleteChangeLogsFromRepository = async (repository) => {
 
 const processDeleteCommitsFromRepository = async (repository) => {
   await Commit.deleteMany({
-    repository: repository._id,
+    repository: repository._id
   })
 }
 
 const processDeleteRepository = async (repository) => {
-  await processDeletePullRequestsFromRepository(repository);
   await processDeleteIssuesFromRepository(repository);
-  await processDeleteChangeLogsFromRepository(repository);
   await processDeleteChangeLogsFromRepository(repository);
   await processDeleteCommitsFromRepository(repository);
   await repository.deleteOne()
@@ -257,7 +244,6 @@ module.exports = {
   storeChangeLogs,
   storeCommits,
   storeIssues,
-  storePullRequests,
   processRepository,
   processOrganizations,
   processDeleteGithubIntegration,

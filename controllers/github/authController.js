@@ -1,10 +1,9 @@
 const GitHubIntegration = require('../../models/GitHubIntegration');
 const {getAccessToken, getGitHubUsername, fetchGitHubOrgs, handleRemoveIntegration} = require("../../helpers/requests/githubRequestHelpers");
-const {createGitHubIntegration, processOrganizations, processDeleteGithubIntegration} = require("../../helpers/database/githubDatabaseHelpers");
+const {createGitHubIntegration, processDeleteGithubIntegration} = require("../../helpers/database/githubDatabaseHelpers");
 const {runWorker} = require("../../helpers/utils/runWorkerHelper");
 
 const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
 const REDIRECT_URI = `${process.env.BACKEND_URL}/api/github/callback`;
 
 const connectGitHub = async (req, res) => {
@@ -54,8 +53,10 @@ const handleCallBack = async (req, res) => {
 }
 
 const getIntegrationStatus = async (req, res) => {
+  const { gitHubIntegration: gitHubIntegrationId } = req
+
   try {
-    const gitHubIntegration = await GitHubIntegration.findOne({});
+    const gitHubIntegration = await GitHubIntegration.findOne({_id: gitHubIntegrationId });
 
     if (!gitHubIntegration) {
       return res.status(404).json({ message: "GitHub integration not found" });
@@ -70,16 +71,16 @@ const getIntegrationStatus = async (req, res) => {
 };
 
 const removeIntegration = async (req, res) => {
+  const { gitHubIntegration: gitHubIntegrationId } = req
+
   try {
-    const gitHubIntegration = await GitHubIntegration.findOne({})
+    const gitHubIntegration = await GitHubIntegration.findOne({_id: gitHubIntegrationId})
 
     if (!gitHubIntegration) {
       return res.status(404).json({ message: "GitHub integration not found" });
     }
 
-
     await handleRemoveIntegration(gitHubIntegration.accessToken);
-
     await processDeleteGithubIntegration(gitHubIntegration);
 
     return res.sendStatus(204);
