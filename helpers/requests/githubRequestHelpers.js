@@ -28,7 +28,7 @@ const getGitHubUsername = async (accessToken) => {
     console.error('Error fetching GitHub username:', error.message);
     throw error;
   }
-};
+};  
 
 const fetchGitHubOrgs = async (access_token) => {
   const octokit = new Octokit({ auth: access_token });
@@ -60,7 +60,7 @@ const fetchOrgUsers = async (orgId, access_token) => {
         per_page: 100,
       }
     );
-    
+
     return users;
 
   } catch (error) {
@@ -110,11 +110,11 @@ const fetchAllCommits = async (orgId, repoName, access_token) => {
   }
 };
 
-const fetchAllIssuesAndPullRequests = async (orgId, repoName, access_token) => {
+const fetchAllIssues = async (orgId, repoName, access_token) => {
   const octokit = new Octokit({ auth: access_token });
 
   try {
-    const allIssues = await octokit.paginate(
+    const issues = await octokit.paginate(
       octokit.issues.listForRepo,
       {
         owner: orgId,
@@ -124,10 +124,7 @@ const fetchAllIssuesAndPullRequests = async (orgId, repoName, access_token) => {
       }
     );
 
-    const issues = allIssues.filter(issue => !issue.pull_request);
-    const pullRequests = allIssues.filter(issue => issue.pull_request);
-
-    return { issues, pullRequests };
+    return issues;
   } catch (error) {
     console.error('Error fetching issues and pull requests:', error);
     throw error;
@@ -135,19 +132,19 @@ const fetchAllIssuesAndPullRequests = async (orgId, repoName, access_token) => {
 };
 
 const fetchAllChangeLogs = async (orgId, repoName, access_token) => {
-  const octokit = new Octokit({ auth: access_token });
-
+  const octokit = new Octokit({ auth: access_token })
+  
   try {
-    const changeLogs = await octokit.paginate(
-      octokit.repos.listReleases,
+    const allEvents = await octokit.paginate(
+      octokit.issues.listEventsForRepo,
       {
         owner: orgId,
         repo: repoName,
-        per_page: 100,
+        per_page: 100
       }
-    );
+    )
 
-    return changeLogs;
+    return allEvents
   } catch (error) {
     console.error('Error fetching change logs:', error);
     throw error;
@@ -178,17 +175,15 @@ const handleRemoveIntegration = async (access_token) => {
 };
 
 
-
-
 module.exports = {
   getAccessToken,
   getGitHubUsername,
   fetchGitHubOrgs,
   fetchOrgRepos,
   fetchAllCommits,
-  fetchAllIssuesAndPullRequests,
+  fetchAllIssues,
   fetchAllChangeLogs,
   fetchOrgUsers,
-  handleRemoveIntegration
+  handleRemoveIntegration,
 }
 

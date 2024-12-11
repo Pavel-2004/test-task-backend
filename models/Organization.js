@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const OrganizationSchema = new mongoose.Schema({
-  login: {
+  name: {
     type: String,
     required: true,
   },

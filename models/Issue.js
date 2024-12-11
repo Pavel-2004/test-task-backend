@@ -5,12 +5,16 @@ const IssueSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  number: {
+  gitHubIssueNumber: {
     type: Number,
     required: true,
   },
   user: {
-    type: String,
+    login: String,
+    avatarUrl: String 
+  },
+  gitHubIssueId: {
+    type: String
   },
   body: {
     type: String,

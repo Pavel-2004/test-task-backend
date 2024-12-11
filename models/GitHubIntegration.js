@@ -5,7 +5,7 @@ const GithubIntegrationSchema = new mongoose.Schema({
     type: String,
     required: true, 
   },
-  githubUsername: {
+  githubUserLogin: {
     type: String,
     required: true,
   }

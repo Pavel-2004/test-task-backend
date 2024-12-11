@@ -2,17 +2,17 @@ const mongoose = require('mongoose');
 
 const ChangelogSchema = new mongoose.Schema({
   user: {
+    login: String,
+    avatarUrl: String 
+  },
+  gitHubIssueId: {
     type: String,
   },
-  name: {
-    type: String,
+  gitHubIssueNumber: {
+    type: Number
   },
-  message: {
+  event: {
     type: String,
-  },
-  published_at: {
-    type: Date,
-    default: Date.now,
   },
   created_at: {
     type: Date,

@@ -16,6 +16,12 @@ const CommitSchema = new mongoose.Schema({
     email: {
       type: String,
     },
+    avatarUrl: {
+      type: String
+    },
+    login: {
+      type: String
+    }
   },
   date: {
     type: Date,
