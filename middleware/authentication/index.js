@@ -2,7 +2,6 @@ const GitHubIntegration = require("../../models/GithubIntegration");
 
 const authMiddleware = async (req, res, next) => {
   try {
-    console.log('here here')
     const githubIntegration = await GitHubIntegration.findOne()
 
     if (!githubIntegration) {

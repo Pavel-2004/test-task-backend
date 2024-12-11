@@ -144,8 +144,6 @@ const fetchAllChangeLogs = async (orgId, repoName, access_token) => {
       }
     )
 
-    console.log(allEvents, 'all events')
-
     return allEvents
   } catch (error) {
     console.error('Error fetching change logs:', error);
